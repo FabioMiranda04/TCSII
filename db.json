@@ -1,0 +1,235 @@
+{
+  "usuarios": [
+    {
+      "ID_Usuario": "1",
+      "NomeCompleto": "Julio Di Franco",
+      "Email": "julio@megacursos.com.br",
+      "SenhaHash": "password123",
+      "DataCadastro": "01/01/2026",
+      "ID_Plano": "p2"
+    },
+    {
+      "ID_Usuario": "2",
+      "NomeCompleto": "Maria Clara",
+      "Email": "maria.clara@gmail.com",
+      "SenhaHash": "securepassword",
+      "DataCadastro": "10/02/2026",
+      "ID_Plano": "p1"
+    },
+    {
+      "ID_Usuario": "3",
+      "NomeCompleto": "Daniel Prof",
+      "Email": "daniel@prof.com.br",
+      "SenhaHash": "professorpass",
+      "DataCadastro": "15/01/2026",
+      "ID_Plano": ""
+    }
+  ],
+  "categorias": [
+    {
+      "ID_Categoria": "cat1",
+      "Nome": "Desenvolvimento Web",
+      "Descricao": "Aprenda a criar páginas interativas e aplicações web completas de ponta a ponta."
+    },
+    {
+      "ID_Categoria": "cat2",
+      "Nome": "Design & UI/UX",
+      "Descricao": "Conceitos de experiência de usuário, interfaces de usuário, Figma e wireframes."
+    },
+    {
+      "ID_Categoria": "cat3",
+      "Nome": "Mobile Development",
+      "Descricao": "Construção de aplicativos móveis nativos e híbridos para Android e iOS."
+    }
+  ],
+  "cursos": [
+    {
+      "ID_Curso": "101",
+      "Titulo": "React.js do Zero ao Avançado",
+      "Descricao": "Aprenda hooks, state management, roteamento, consumo de APIs REST, context API e boas práticas no ecossistema React.",
+      "ID_Instrutor": "3",
+      "ID_Categoria": "cat1",
+      "Nivel": "Intermediário",
+      "DataPublicacao": "10/02/2026",
+      "TotalAulas": 3,
+      "TotalHoras": 24,
+      "Imagem": "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&auto=format&fit=crop&q=60"
+    },
+    {
+      "ID_Curso": "102",
+      "Titulo": "TypeScript para Desenvolvedores JS",
+      "Descricao": "Entenda os conceitos de tipagem estática, interfaces, generics, decorators e como integrar TS no seu dia a dia React/Node.",
+      "ID_Instrutor": "3",
+      "ID_Categoria": "cat1",
+      "Nivel": "Intermediário",
+      "DataPublicacao": "15/02/2026",
+      "TotalAulas": 2,
+      "TotalHoras": 15,
+      "Imagem": "https://images.unsplash.com/photo-1516116211223-5c359a36298a?w=600&auto=format&fit=crop&q=60"
+    },
+    {
+      "ID_Curso": "103",
+      "Titulo": "Fundamentos de HTML5 e CSS3 Moderno",
+      "Descricao": "A porta de entrada do desenvolvimento web. Aprenda semântica, Flexbox, CSS Grid, e layouts responsivos mobile-first.",
+      "ID_Instrutor": "1",
+      "ID_Categoria": "cat1",
+      "Nivel": "Iniciante",
+      "DataPublicacao": "18/01/2026",
+      "TotalAulas": 0,
+      "TotalHoras": 18,
+      "Imagem": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600&auto=format&fit=crop&q=60"
+    }
+  ],
+  "modulos": [
+    {
+      "ID_Modulo": "m1",
+      "ID_Curso": "101",
+      "Titulo": "Introdução ao React & JSX",
+      "Ordem": 1
+    },
+    {
+      "ID_Modulo": "m2",
+      "ID_Curso": "101",
+      "Titulo": "Estado & Hooks",
+      "Ordem": 2
+    },
+    {
+      "ID_Modulo": "m3",
+      "ID_Curso": "102",
+      "Titulo": "Tipagem Estática Básica",
+      "Ordem": 1
+    }
+  ],
+  "aulas": [
+    {
+      "ID_Aula": "a1",
+      "ID_Modulo": "m1",
+      "Titulo": "01. Introdução ao Curso e Configurações",
+      "TipoConteudo": "Vídeo",
+      "URL_Conteudo": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      "DuracaoMinutos": 12,
+      "Ordem": 1
+    },
+    {
+      "ID_Aula": "a2",
+      "ID_Modulo": "m1",
+      "Titulo": "02. O que é JSX?",
+      "TipoConteudo": "Vídeo",
+      "URL_Conteudo": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      "DuracaoMinutos": 18,
+      "Ordem": 2
+    },
+    {
+      "ID_Aula": "a3",
+      "ID_Modulo": "m2",
+      "Titulo": "03. O Hook useState",
+      "TipoConteudo": "Vídeo",
+      "URL_Conteudo": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      "DuracaoMinutos": 25,
+      "Ordem": 1
+    },
+    {
+      "ID_Aula": "a4",
+      "ID_Modulo": "m3",
+      "Titulo": "01. Configuração do compiler TS",
+      "TipoConteudo": "Vídeo",
+      "URL_Conteudo": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      "DuracaoMinutos": 15,
+      "Ordem": 1
+    },
+    {
+      "ID_Aula": "a5",
+      "ID_Modulo": "m3",
+      "Titulo": "02. Tipagem de Variáveis e Funções",
+      "TipoConteudo": "Vídeo",
+      "URL_Conteudo": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      "DuracaoMinutos": 20,
+      "Ordem": 2
+    }
+  ],
+  "matriculas": [
+    {
+      "ID_Matricula": "mat1",
+      "ID_Usuario": "1",
+      "ID_Curso": "101",
+      "DataMatricula": "15/02/2026",
+      "DataConclusao": null
+    }
+  ],
+  "progresso_aulas": [
+    {
+      "id": "1",
+      "ID_Usuario": "1",
+      "ID_Aula": "a1",
+      "DataConclusao": "16/02/2026",
+      "Status": "Concluído"
+    }
+  ],
+  "avaliacoes": [],
+  "trilhas": [
+    {
+      "ID_Trilha": "t1",
+      "Titulo": "Desenvolvedor Frontend Fullstack",
+      "Descricao": "Domine HTML, CSS, JavaScript, React, TypeScript e as principais ferramentas do mercado.",
+      "ID_Categoria": "cat1"
+    }
+  ],
+  "trilhas_cursos": [
+    {
+      "id": "tc1",
+      "ID_Trilha": "t1",
+      "ID_Curso": "101",
+      "Ordem": 1
+    },
+    {
+      "id": "tc2",
+      "ID_Trilha": "t1",
+      "ID_Curso": "102",
+      "Ordem": 2
+    }
+  ],
+  "certificados": [],
+  "planos": [
+    {
+      "ID_Plano": "p1",
+      "Nome": "Plano Mensal",
+      "Descricao": "Acesso básico por um mês.",
+      "Preco": "R$ 49,90",
+      "DuracaoMeses": 1
+    },
+    {
+      "ID_Plano": "p2",
+      "Nome": "Plano Anual PRO",
+      "Descricao": "Acesso ilimitado e prioritário por 1 ano.",
+      "Preco": "R$ 29,90",
+      "DuracaoMeses": 12
+    },
+    {
+      "ID_Plano": "p3",
+      "Nome": "Plano Vitalício",
+      "Descricao": "Acesso vitalício à plataforma.",
+      "Preco": "R$ 599,00",
+      "DuracaoMeses": 999
+    }
+  ],
+  "assinaturas": [
+    {
+      "ID_Assinatura": "as1",
+      "ID_Usuario": "1",
+      "ID_Plano": "p2",
+      "DataInicio": "01/01/2026",
+      "DataFim": "01/01/2027"
+    }
+  ],
+  "pagamentos": [
+    {
+      "ID_Pagamento": "pag1",
+      "ID_Assinatura": "as1",
+      "ValorPago": "R$ 358,80",
+      "DataPagamento": "01/01/2026",
+      "MetodoPagamento": "Cartão de Crédito",
+      "Id_Transacao_Gateway": "tr_991823102",
+      "DataFim": "01/01/2027"
+    }
+  ]
+}
