@@ -4,16 +4,16 @@ import { z } from 'zod';
 export interface IPlano {
   ID_Plano?: string;
   Nome: string;
-  Descricao: string;
-  Preco: string;
+  Descricao?: string;
+  Preco: number;
   DuracaoMeses: number;
 }
 
 export const planoSchema = z.object({
   ID_Plano: z.string().optional(),
   Nome: z.string().min(3, 'O nome do plano deve ter pelo menos 3 caracteres'),
-  Descricao: z.string().min(5, 'A descrição deve ter pelo menos 5 caracteres'),
-  Preco: z.string().min(2, 'O preço é obrigatório'),
+  Descricao: z.string().optional(),
+  Preco: z.preprocess((val) => Number(String(val).replace(/[^\d,.-]/g, '').replace(',', '.')), z.number().positive('O preço deve ser positivo')),
   DuracaoMeses: z.preprocess((val) => Number(val), z.number().int().positive('A duração deve ser positiva'))
 });
 
@@ -38,7 +38,7 @@ export const assinaturaSchema = z.object({
 export interface IPagamento {
   ID_Pagamento?: string;
   ID_Assinatura: string;
-  ValorPago: string;
+  ValorPago: number;
   DataPagamento: string;
   MetodoPagamento: string;
   Id_Transacao_Gateway: string;
@@ -48,7 +48,7 @@ export interface IPagamento {
 export const pagamentoSchema = z.object({
   ID_Pagamento: z.string().optional(),
   ID_Assinatura: z.string().min(1, 'O ID da assinatura é obrigatório'),
-  ValorPago: z.string().min(1, 'O valor pago é obrigatório'),
+  ValorPago: z.preprocess((val) => Number(val), z.number().positive('O valor pago deve ser positivo')),
   DataPagamento: z.string().min(8, 'A data do pagamento é obrigatória'),
   MetodoPagamento: z.string().min(1, 'O método de pagamento é obrigatório'),
   Id_Transacao_Gateway: z.string().min(1, 'O ID da transação é obrigatório'),

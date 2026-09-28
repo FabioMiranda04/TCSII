@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { tokenStorage } from '../../services/api.service';
 
 export const Nav = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -112,8 +113,8 @@ export const Nav = () => {
               
               <li className="mt-4 border-top pt-3">
                 <NavLink 
-                  to="/" 
-                  onClick={closeSidebar}
+                  to="/login"
+                  onClick={() => { tokenStorage.clear(); closeSidebar(); }}
                   className="sidebar-link text-danger"
                   style={{ color: '#ef4444' }}
                 >

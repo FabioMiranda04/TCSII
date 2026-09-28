@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
-import { type IUsuario, usuarioSchema } from '../../models/usuario.model';
-import { type IPlano } from '../../models/assinatura.model';
+import { type IUsuario, usuarioSchema, usuarioEdicaoSchema } from '../../models/usuario.model';
 import { UsuariosService } from '../../services/usuario.service';
-import { AssinaturaService } from '../../services/assinatura.service';
+import { ApiService } from '../../services/api.service';
 import { z } from 'zod';
 
 const service = new UsuariosService();
-const financeService = new AssinaturaService();
 
 export const UsuarioPages = () => {
   const [usuarios, setUsuarios] = useState<IUsuario[]>([]);
-  const [planos, setPlanos] = useState<IPlano[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -21,24 +18,19 @@ export const UsuarioPages = () => {
     NomeCompleto: '',
     Email: '',
     SenhaHash: '',
-    DataCadastro: '',
-    ID_Plano: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     carregarDados();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const carregarDados = async () => {
     setLoading(true);
     try {
-      const [usersData, planosData] = await Promise.all([
-        service.listar(),
-        financeService.listarPlanos()
-      ]);
-      setUsuarios(usersData);
-      setPlanos(planosData);
+      setUsuarios(await service.listar());
     } catch {
       triggerAlert('danger', 'Erro ao carregar os dados.');
     } finally {
@@ -56,9 +48,7 @@ export const UsuarioPages = () => {
     setFormData({
       NomeCompleto: user.NomeCompleto,
       Email: user.Email,
-      SenhaHash: user.SenhaHash || '',
-      DataCadastro: user.DataCadastro,
-      ID_Plano: user.ID_Plano || ''
+      SenhaHash: '',
     });
     setErrors({});
   };
@@ -66,16 +56,11 @@ export const UsuarioPages = () => {
   const handleStartCreate = () => {
     if (editingId === 'new') return;
 
-    const today = new Date();
-    const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
-
     const newTemp: IUsuario = {
       ID_Usuario: 'new',
       NomeCompleto: '',
       Email: '',
       SenhaHash: '',
-      DataCadastro: formattedDate,
-      ID_Plano: ''
     };
 
     setUsuarios(prev => [newTemp, ...prev]);
@@ -83,9 +68,7 @@ export const UsuarioPages = () => {
     setFormData({
       NomeCompleto: newTemp.NomeCompleto,
       Email: newTemp.Email,
-      SenhaHash: newTemp.SenhaHash,
-      DataCadastro: newTemp.DataCadastro,
-      ID_Plano: newTemp.ID_Plano
+      SenhaHash: '',
     });
     setErrors({});
   };
@@ -106,7 +89,7 @@ export const UsuarioPages = () => {
   const handleSave = async (id: string) => {
     setErrors({});
     try {
-      usuarioSchema.parse(formData);
+      (id === 'new' ? usuarioSchema : usuarioEdicaoSchema).parse(formData);
 
       if (id === 'new') {
         const created = await service.criar(formData);
@@ -128,7 +111,7 @@ export const UsuarioPages = () => {
         });
         setErrors(errMap);
       } else {
-        triggerAlert('danger', 'Erro ao salvar o usuário.');
+        triggerAlert('danger', err instanceof Error ? err.message : 'Erro ao salvar o usuário.');
       }
     }
   };
@@ -214,16 +197,14 @@ export const UsuarioPages = () => {
                   <tr>
                     <th className="py-3 px-4">Nome</th>
                     <th className="py-3">E-mail</th>
-                    <th className="py-3">Senha (Hash)</th>
+                    <th className="py-3">Senha</th>
                     <th className="py-3">Data Cadastro</th>
-                    <th className="py-3" style={{ width: '180px' }}>Qual Plano?</th>
                     <th className="py-3 text-end px-4" style={{ width: '120px' }}>Ações</th>
                   </tr>
                 </thead>
                 <tbody className="border-0">
                   {filteredUsuarios.map((user) => {
                     const isEditing = editingId === user.ID_Usuario;
-                    const userPlan = planos.find(p => String(p.ID_Plano) === String(user.ID_Plano));
                     return (
                       <tr key={user.ID_Usuario} className={isEditing ? 'table-warning bg-opacity-10' : ''}>
                         {/* NOME / ID */}
@@ -280,7 +261,7 @@ export const UsuarioPages = () => {
                                 type="password" 
                                 name="SenhaHash"
                                 value={formData.SenhaHash}
-                                placeholder="Mínimo 6 caracteres"
+                                placeholder={editingId === 'new' ? 'Mínimo 6 caracteres' : 'Deixe vazio para manter'}
                                 onChange={handleInputChange}
                                 className={`form-control form-control-sm rounded-3 ${errors.SenhaHash ? 'is-invalid' : ''}`}
                               />
@@ -291,42 +272,9 @@ export const UsuarioPages = () => {
                           )}
                         </td>
 
-                        {/* DATA CADASTRO */}
+                        {/* DATA CADASTRO (gerada pelo backend) */}
                         <td className="py-3">
-                          {isEditing ? (
-                            <input 
-                              type="text" 
-                              name="DataCadastro"
-                              value={formData.DataCadastro}
-                              onChange={handleInputChange}
-                              className={`form-control form-control-sm rounded-3 ${errors.DataCadastro ? 'is-invalid' : ''}`}
-                            />
-                          ) : (
-                            <span className="text-slate-500 small">{user.DataCadastro}</span>
-                          )}
-                        </td>
-
-                        {/* ID PLANO (QUAL PLANO) */}
-                        <td className="py-3">
-                          {isEditing ? (
-                            <select 
-                              name="ID_Plano"
-                              value={formData.ID_Plano}
-                              onChange={handleInputChange}
-                              className="form-select form-select-sm rounded-3"
-                            >
-                              <option value="">Nenhum Plano</option>
-                              {planos.map(p => (
-                                <option key={p.ID_Plano} value={p.ID_Plano}>{p.Nome} ({p.Preco})</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className={`badge rounded-pill fw-bold ${
-                              userPlan ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-muted'
-                            }`}>
-                              {userPlan ? userPlan.Nome : 'Nenhum'}
-                            </span>
-                          )}
+                          <span className="text-slate-500 small">{ApiService.formatarData(user.DataCadastro) || '—'}</span>
                         </td>
 
                         {/* ACTIONS */}

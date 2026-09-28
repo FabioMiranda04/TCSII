@@ -8,24 +8,8 @@ import { z } from 'zod';
 const service = new TrilhaService();
 const categoriaService = new CategoriaService();
 
-const GRADIENTS = [
-  { label: 'Azul -> Roxo', value: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)' },
-  { label: 'Esmeralda -> Ciano', value: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)' },
-  { label: 'Laranja -> Vermelho', value: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
-  { label: 'Rosa -> Roxo', value: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)' },
-  { label: 'Roxo -> Azul', value: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)' },
-  { label: 'Escuro -> Grafite', value: 'linear-gradient(135deg, #111827 0%, #1f2937 100%)' }
-];
-
-const ICONS = [
-  { label: 'Bússola', value: 'bi-compass' },
-  { label: 'Janela Web', value: 'bi-window-sidebar' },
-  { label: 'Rede/Servidor', value: 'bi-hdd-network' },
-  { label: 'Paleta de Cores', value: 'bi-palette' },
-  { label: 'Smartphone', value: 'bi-phone' },
-  { label: 'Livro', value: 'bi-journal-bookmark-fill' },
-  { label: 'Estrela', value: 'bi-star-fill' }
-];
+// Gradiente padrão para o card temporário de criação (os demais vêm derivados do service)
+const GRADIENTS = ['linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'];
 
 export const TrilhasPages = () => {
   const [trilhas, setTrilhas] = useState<ITrilha[]>([]);
@@ -39,16 +23,13 @@ export const TrilhasPages = () => {
     Titulo: '',
     Descricao: '',
     ID_Categoria: '',
-    cursosCount: 0,
-    cargaHoraria: '',
-    progresso: 0,
-    gradient: GRADIENTS[0].value,
-    icon: ICONS[0].value
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     carregarDados();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const carregarDados = async () => {
@@ -78,11 +59,6 @@ export const TrilhasPages = () => {
       Titulo: trilha.Titulo,
       Descricao: trilha.Descricao,
       ID_Categoria: trilha.ID_Categoria,
-      cursosCount: trilha.cursosCount || 5,
-      cargaHoraria: trilha.cargaHoraria || '40 horas',
-      progresso: trilha.progresso || 0,
-      gradient: trilha.gradient || GRADIENTS[0].value,
-      icon: trilha.icon || ICONS[0].value
     });
     setErrors({});
   };
@@ -90,17 +66,15 @@ export const TrilhasPages = () => {
   const handleStartCreate = () => {
     if (editingId === 'new') return;
     
-    const defaultCat = categorias.length > 0 ? categorias[0].ID_Categoria || 'cat1' : 'cat1';
+    const defaultCat = categorias.length > 0 ? categorias[0].ID_Categoria || '' : '';
     const newTemp: ITrilha = {
       ID_Trilha: 'new',
       Titulo: 'Nova Trilha',
       Descricao: 'Descrição breve sobre os conteúdos desta trilha.',
       ID_Categoria: defaultCat,
-      cursosCount: 5,
-      cargaHoraria: '40 horas',
-      progresso: 0,
-      gradient: GRADIENTS[0].value,
-      icon: ICONS[0].value
+      cursosCount: 0,
+      gradient: GRADIENTS[0],
+      icon: 'bi-compass'
     };
 
     setTrilhas(prev => [...prev, newTemp]);
@@ -109,11 +83,6 @@ export const TrilhasPages = () => {
       Titulo: newTemp.Titulo,
       Descricao: newTemp.Descricao,
       ID_Categoria: newTemp.ID_Categoria,
-      cursosCount: newTemp.cursosCount,
-      cargaHoraria: newTemp.cargaHoraria,
-      progresso: newTemp.progresso,
-      gradient: newTemp.gradient,
-      icon: newTemp.icon
     });
     setErrors({});
   };
@@ -130,7 +99,7 @@ export const TrilhasPages = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'cursosCount' || name === 'progresso' ? Number(value) : value
+      [name]: value
     }));
   };
 
@@ -144,7 +113,8 @@ export const TrilhasPages = () => {
         setTrilhas(prev => prev.map(t => t.ID_Trilha === 'new' ? created : t));
         triggerAlert('success', 'Trilha criada com sucesso!');
       } else {
-        const updated = await service.atualizar(id, formData);
+        const atual = trilhas.find(t => t.ID_Trilha === id);
+        const updated = await service.atualizar(id, { ...formData, cursosCount: atual?.cursosCount });
         setTrilhas(prev => prev.map(t => t.ID_Trilha === id ? updated : t));
         triggerAlert('success', 'Trilha atualizada com sucesso!');
       }
@@ -159,7 +129,7 @@ export const TrilhasPages = () => {
         });
         setErrors(errMap);
       } else {
-        triggerAlert('danger', 'Erro ao salvar os dados.');
+        triggerAlert('danger', err instanceof Error ? err.message : 'Erro ao salvar os dados.');
       }
     }
   };
@@ -170,8 +140,8 @@ export const TrilhasPages = () => {
         await service.deletar(id);
         setTrilhas(prev => prev.filter(t => t.ID_Trilha !== id));
         triggerAlert('success', 'Trilha removida com sucesso!');
-      } catch {
-        triggerAlert('danger', 'Erro ao remover trilha.');
+      } catch (err) {
+        triggerAlert('danger', err instanceof Error ? err.message : 'Erro ao remover trilha.');
       }
     }
   };
@@ -228,7 +198,7 @@ export const TrilhasPages = () => {
                   {/* Top Color Section */}
                   <div 
                     className="p-4 text-white position-relative" 
-                    style={{ background: isEditing ? formData.gradient : (trilha.gradient || GRADIENTS[0].value) }}
+                    style={{ background: trilha.gradient || GRADIENTS[0] }}
                   >
                     {!isEditing && (
                       <div className="position-absolute top-3 end-3 d-flex gap-2">
@@ -264,36 +234,6 @@ export const TrilhasPages = () => {
                           {errors.Titulo && <span className="text-danger fw-bold fs-7">{errors.Titulo}</span>}
                         </div>
 
-                        <div className="row g-2">
-                          <div className="col-6">
-                            <label className="form-label fs-7 fw-bold text-white-50 m-0">Estilo Gradiente</label>
-                            <select 
-                              name="gradient"
-                              value={formData.gradient}
-                              onChange={handleInputChange}
-                              className="form-select form-select-sm bg-white bg-opacity-10 text-white border-0 rounded-3"
-                              style={{ color: '#000' }}
-                            >
-                              {GRADIENTS.map(g => (
-                                <option key={g.value} value={g.value} style={{ color: '#000' }}>{g.label}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="col-6">
-                            <label className="form-label fs-7 fw-bold text-white-50 m-0">Ícone</label>
-                            <select 
-                              name="icon"
-                              value={formData.icon}
-                              onChange={handleInputChange}
-                              className="form-select form-select-sm bg-white bg-opacity-10 text-white border-0 rounded-3"
-                              style={{ color: '#000' }}
-                            >
-                              {ICONS.map(i => (
-                                <option key={i.value} value={i.value} style={{ color: '#000' }}>{i.label}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
                       </div>
                     ) : (
                       <>
@@ -301,13 +241,10 @@ export const TrilhasPages = () => {
                           <div className="bg-white bg-opacity-20 p-3 rounded-3 d-inline-flex">
                             <i className={`bi ${trilha.icon || 'bi-compass'} fs-4`}></i>
                           </div>
-                          <span className="badge bg-white bg-opacity-25 text-white fw-bold">
-                            {trilha.cargaHoraria || '40 horas'}
-                          </span>
                         </div>
                         <h4 className="fw-bold mb-1">{trilha.Titulo}</h4>
                         <div className="d-flex align-items-center justify-content-between">
-                          <p className="small text-white-50 m-0">{trilha.cursosCount || 5} cursos inclusos</p>
+                          <p className="small text-white-50 m-0">{trilha.cursosCount ?? 0} cursos inclusos</p>
                           <span className="badge bg-white bg-opacity-20 text-white fs-9">{category ? category.Nome : 'Categoria'}</span>
                         </div>
                       </>
@@ -344,43 +281,6 @@ export const TrilhasPages = () => {
                           </select>
                         </div>
 
-                        <div className="row g-2">
-                          <div className="col-6">
-                            <label className="form-label fs-7 fw-bold text-slate-500 m-0">Qtd de Cursos</label>
-                            <input 
-                              type="number" 
-                              name="cursosCount"
-                              value={formData.cursosCount}
-                              onChange={handleInputChange}
-                              className="form-control bg-light border-0 rounded-3"
-                            />
-                          </div>
-                          <div className="col-6">
-                            <label className="form-label fs-7 fw-bold text-slate-500 m-0">Carga Horária</label>
-                            <input 
-                              type="text" 
-                              name="cargaHoraria"
-                              value={formData.cargaHoraria}
-                              placeholder="ex: 40 horas"
-                              onChange={handleInputChange}
-                              className="form-control bg-light border-0 rounded-3"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="form-label fs-7 fw-bold text-slate-500 m-0">Progresso Geral (%)</label>
-                          <input 
-                            type="number" 
-                            name="progresso"
-                            min="0"
-                            max="100"
-                            value={formData.progresso}
-                            onChange={handleInputChange}
-                            className="form-control bg-light border-0 rounded-3"
-                          />
-                        </div>
-
                         <div className="d-flex justify-content-end gap-2 mt-3">
                           <button className="btn btn-outline-secondary btn-sm rounded-pill px-3" onClick={handleCancel}>
                             Cancelar
@@ -394,24 +294,6 @@ export const TrilhasPages = () => {
                       <>
                         <p className="text-slate-600 mb-4">{trilha.Descricao}</p>
                         <div>
-                          <div className="d-flex align-items-center justify-content-between mb-2">
-                            <span className="small text-muted fw-bold">Progresso Geral</span>
-                            <span className="small text-slate-800 fw-bold">{trilha.progresso || 0}%</span>
-                          </div>
-                          <div className="progress rounded-pill" style={{ height: '8px' }}>
-                            <div 
-                              className="progress-bar rounded-pill" 
-                              role="progressbar" 
-                              style={{ 
-                                width: `${trilha.progresso || 0}%`,
-                                background: 'var(--primary-color)' 
-                              }} 
-                              aria-valuenow={trilha.progresso || 0} 
-                              aria-valuemin={0} 
-                              aria-valuemax={100}
-                            ></div>
-                          </div>
-                          
                           <div className="d-flex justify-content-end mt-4">
                             <button className="btn btn-outline-primary btn-sm rounded-pill px-4" onClick={() => handleStartEdit(trilha)}>
                               Configurar Trilha

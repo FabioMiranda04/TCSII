@@ -3,6 +3,10 @@ import { type IPlano, type IAssinatura, type IPagamento } from '../../models/ass
 import { type IUsuario } from '../../models/usuario.model';
 import { AssinaturaService } from '../../services/assinatura.service';
 import { UsuariosService } from '../../services/usuario.service';
+import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
+
+const moeda = (v: number) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const financeService = new AssinaturaService();
 const usuarioService = new UsuariosService();
@@ -13,7 +17,7 @@ export const AssinaturasPages = () => {
   const [loading, setLoading] = useState(true);
   
   // Simulated Logged-In User
-  const [activeUserId, setActiveUserId] = useState<string>('1');
+  const [activeUserId, setActiveUserId] = useState<string>(AuthService.usuarioLogado()?.ID_Usuario ?? '');
 
   // Checkout modal state
   const [checkoutPlano, setCheckoutPlano] = useState<IPlano | null>(null);
@@ -25,9 +29,12 @@ export const AssinaturasPages = () => {
   const [userPagamento, setUserPagamento] = useState<IPagamento | null>(null);
 
   const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
+  const [agora] = useState<number>(() => Date.now());
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     carregarDados();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeUserId]);
 
   const carregarDados = async () => {
@@ -35,24 +42,24 @@ export const AssinaturasPages = () => {
     try {
       const [planosData, usersData] = await Promise.all([
         financeService.listarPlanos(),
-        usuarioService.listar()
+        usuarioService.listar().catch(() => [] as IUsuario[])
       ]);
       setPlanos(planosData);
       setUsuarios(usersData);
+      if (!activeUserId) { setUserAssinatura(null); setUserPagamento(null); return; }
 
       // Fetch active signature & payment details for simulated user
       const activeSig = await financeService.buscarAssinaturaPorUsuario(activeUserId);
       setUserAssinatura(activeSig);
 
       if (activeSig) {
-        const pagamentos = await financeService.listarPagamentos();
-        const activePag = pagamentos.find(p => String(p.ID_Assinatura) === String(activeSig.ID_Assinatura));
-        setUserPagamento(activePag || null);
+        const pagamentos = await financeService.listarPagamentos(activeSig.ID_Assinatura);
+        setUserPagamento(pagamentos[pagamentos.length - 1] || null);
       } else {
         setUserPagamento(null);
       }
-    } catch {
-      triggerAlert('danger', 'Erro ao carregar dados financeiros.');
+    } catch (e) {
+      triggerAlert('danger', e instanceof Error ? e.message : 'Erro ao carregar dados financeiros.');
     } finally {
       setLoading(false);
     }
@@ -63,8 +70,8 @@ export const AssinaturasPages = () => {
     setTimeout(() => setAlert(null), 4000);
   };
 
-  const activeUser = usuarios.find(u => String(u.ID_Usuario) === String(activeUserId));
-  const activePlan = planos.find(p => String(p.ID_Plano) === String(activeUser?.ID_Plano));
+  const assinaturaVigente = userAssinatura && new Date(userAssinatura.DataFim).getTime() >= agora ? userAssinatura : null;
+  const activePlan = planos.find(p => String(p.ID_Plano) === String(assinaturaVigente?.ID_Plano));
 
   // Start checkout simulation
   const handleStartCheckout = (plano: IPlano) => {
@@ -73,17 +80,15 @@ export const AssinaturasPages = () => {
 
   // Complete payment checkout
   const handleConfirmPayment = async () => {
-    if (!checkoutPlano || !activeUser) return;
+    if (!checkoutPlano || !activeUserId) return;
     setIsProcessing(true);
 
     try {
       const today = new Date();
-      const format = (d: Date) => `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-      
-      const dataInicio = format(today);
+      const dataInicio = today.toISOString();
       const dataFimDate = new Date(today);
-      dataFimDate.setMonth(today.getMonth() + checkoutPlano.DuracaoMeses);
-      const dataFim = format(dataFimDate);
+      dataFimDate.setMonth(today.getMonth() + Number(checkoutPlano.DuracaoMeses));
+      const dataFim = dataFimDate.toISOString();
 
       // 1. Create Assinatura record
       const newSig: Omit<IAssinatura, 'ID_Assinatura'> = {
@@ -95,7 +100,7 @@ export const AssinaturasPages = () => {
       const createdSig = await financeService.criarAssinatura(newSig);
 
       // 2. Create Pagamento record
-      const gatewayTx = 'tr_gw_' + Math.floor(100000000 + Math.random() * 900000000);
+      const gatewayTx = 'TXN-' + (crypto.randomUUID?.() ?? String(Date.now()) + Math.random().toString(16).slice(2)).replace(/-/g, '').slice(0, 12).toUpperCase();
       const newPag: Omit<IPagamento, 'ID_Pagamento'> = {
         ID_Assinatura: createdSig.ID_Assinatura!,
         ValorPago: checkoutPlano.Preco,
@@ -106,16 +111,13 @@ export const AssinaturasPages = () => {
       };
       await financeService.criarPagamento(newPag);
 
-      // 3. Update User ID_Plano to unlock course access
-      await usuarioService.atualizar(activeUserId, { ID_Plano: checkoutPlano.ID_Plano! });
-
       triggerAlert('success', `Assinatura de ${checkoutPlano.Nome} ativa com sucesso! Acesso aos cursos liberado.`);
       setCheckoutPlano(null);
       
       // Reload UI data
       await carregarDados();
-    } catch {
-      triggerAlert('danger', 'Erro ao finalizar a simulação do pagamento.');
+    } catch (e) {
+      triggerAlert('danger', e instanceof Error ? e.message : 'Erro ao finalizar a simulação do pagamento.');
     } finally {
       setIsProcessing(false);
     }
@@ -178,7 +180,7 @@ export const AssinaturasPages = () => {
               </h4>
               {userAssinatura && (
                 <span className="text-muted small">
-                  Assinatura #{userAssinatura.ID_Assinatura} • Período: {userAssinatura.DataInicio} até {userAssinatura.DataFim}
+                  Assinatura #{userAssinatura.ID_Assinatura} • Período: {ApiService.formatarData(userAssinatura.DataInicio)} até {ApiService.formatarData(userAssinatura.DataFim)}
                 </span>
               )}
             </div>
@@ -209,8 +211,8 @@ export const AssinaturasPages = () => {
       ) : (
         <div className="row g-4 justify-content-center">
           {planos.map((plano) => {
-            const isCurrent = String(plano.ID_Plano) === String(activeUser?.ID_Plano);
-            const popular = plano.ID_Plano === 'p2';
+            const isCurrent = String(plano.ID_Plano) === String(activePlan?.ID_Plano);
+            const popular = planos.length > 1 && plano === [...planos].sort((a, b) => b.Preco - a.Preco)[Math.floor(planos.length / 2)];
             
             return (
               <div key={plano.ID_Plano} className="col-12 col-md-6 col-lg-4">
@@ -225,7 +227,7 @@ export const AssinaturasPages = () => {
                   
                   <div className="p-4 text-center border-bottom bg-light">
                     <h5 className="fw-bold text-slate-800 text-uppercase mb-2 mt-2">{plano.Nome}</h5>
-                    <h2 className="fw-extrabold text-slate-900 mb-1">{plano.Preco}</h2>
+                    <h2 className="fw-extrabold text-slate-900 mb-1">{moeda(plano.Preco)}</h2>
                     <span className="text-muted small">Validade: {plano.DuracaoMeses} Meses</span>
                   </div>
                   
@@ -265,7 +267,7 @@ export const AssinaturasPages = () => {
                 <div className="p-3 bg-light rounded-3 mb-3 border">
                   <div className="small text-muted">PLANO SELECIONADO</div>
                   <h5 className="fw-bold text-slate-800 m-0">{checkoutPlano.Nome}</h5>
-                  <div className="fw-bold text-primary fs-4 mt-1">{checkoutPlano.Preco}</div>
+                  <div className="fw-bold text-primary fs-4 mt-1">{moeda(checkoutPlano.Preco)}</div>
                 </div>
 
                 <div className="mb-3">

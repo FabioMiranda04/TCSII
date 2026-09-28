@@ -4,43 +4,55 @@ import { ApiService } from './api.service';
 const RECURSO = 'modulos';
 
 /**
- * ModuloService — Gerencia operações CRUD de módulos via API (json-server).
- * Os dados são persistidos no db.json.
+ * ModuloService — CRUD de módulos via API NestJS (/modulos).
+ * O backend já devolve os módulos ordenados por Ordem.
  */
 export class ModuloService extends ApiService {
   private url(caminho = '') {
     return ApiService.buildUrl(RECURSO, caminho);
   }
 
+  private static normalizar(m: IModulo): IModulo {
+    const { ID_Modulo, ID_Curso, Titulo, Ordem } = ApiService.idsParaString(m);
+    return { ID_Modulo, ID_Curso, Titulo, Ordem: Number(Ordem) };
+  }
+
+  private static paraApi(item: Partial<IModulo>) {
+    const body: Record<string, unknown> = {};
+    if (item.ID_Curso !== undefined) body.ID_Curso = Number(item.ID_Curso);
+    if (item.Titulo !== undefined) body.Titulo = item.Titulo;
+    if (item.Ordem !== undefined) body.Ordem = Number(item.Ordem);
+    return body;
+  }
+
   async listar(): Promise<IModulo[]> {
     const data = await this.request<IModulo[]>(this.url());
-    return data.map(m => ({ ...m, ID_Modulo: String(m.ID_Modulo || (m as any).id) }));
+    return data.map(ModuloService.normalizar);
   }
 
   async buscarPorId(id: string): Promise<IModulo> {
-    const item = await this.request<IModulo>(this.url(`/${id}`));
-    return { ...item, ID_Modulo: String(item.ID_Modulo || (item as any).id) };
+    return ModuloService.normalizar(await this.request<IModulo>(this.url(`/${id}`)));
   }
 
   async listarPorCurso(idCurso: string): Promise<IModulo[]> {
-    const data = await this.request<IModulo[]>(this.url(`?ID_Curso=${idCurso}&_sort=Ordem`));
-    return data.map(m => ({ ...m, ID_Modulo: String(m.ID_Modulo || (m as any).id) }));
+    const data = await this.request<IModulo[]>(this.url(`?ID_Curso=${encodeURIComponent(idCurso)}`));
+    return data.map(ModuloService.normalizar);
   }
 
   async criar(item: Omit<IModulo, 'ID_Modulo'>): Promise<IModulo> {
     const data = await this.request<IModulo>(this.url(), {
       method: 'POST',
-      body: JSON.stringify(item),
+      body: JSON.stringify(ModuloService.paraApi(item)),
     });
-    return { ...data, ID_Modulo: String(data.ID_Modulo || (data as any).id) };
+    return ModuloService.normalizar(data);
   }
 
   async atualizar(id: string, item: Partial<IModulo>): Promise<IModulo> {
     const data = await this.request<IModulo>(this.url(`/${id}`), {
-      method: 'PUT',
-      body: JSON.stringify({ ...item, id }),
+      method: 'PATCH',
+      body: JSON.stringify(ModuloService.paraApi(item)),
     });
-    return { ...data, ID_Modulo: String(data.ID_Modulo || (data as any).id) };
+    return ModuloService.normalizar(data);
   }
 
   async deletar(id: string): Promise<void> {

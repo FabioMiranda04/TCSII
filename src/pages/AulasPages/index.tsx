@@ -59,7 +59,9 @@ export const AulasPages = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     carregarDados();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const carregarDados = async () => {
@@ -123,13 +125,14 @@ export const AulasPages = () => {
       return a.Ordem - b.Ordem;
     });
 
-  // Automatically update active lecture if course changes
   useEffect(() => {
     if (courseAulas.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveAula(courseAulas[0]);
     } else {
       setActiveAula(null);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCourseId, aulas, modulos]);
 
   // Check if lecture is watched
@@ -157,6 +160,7 @@ export const AulasPages = () => {
         try {
           const today = new Date();
           const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+          // eslint-disable-next-line react-hooks/purity
           const hashHex = 'MC-CONF-' + Math.floor(1000 + Math.random() * 9000) + '-' + courseId;
 
           const newCert: Omit<ICertificado, 'ID_Certificado'> = {
@@ -183,17 +187,17 @@ export const AulasPages = () => {
     try {
       if (activeProgress) {
         // Unwatch
-        await progressoService.deletar(activeProgress.id!);
-        const updatedProgress = progressos.filter(p => p.id !== activeProgress.id);
+        await progressoService.deletar(activeProgress.ID_Usuario, activeProgress.ID_Aula);
+        const updatedProgress = progressos.filter(
+          p => !(String(p.ID_Usuario) === String(activeProgress.ID_Usuario) && String(p.ID_Aula) === String(activeProgress.ID_Aula))
+        );
         setProgressos(updatedProgress);
       } else {
         // Watch
-        const today = new Date();
-        const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
-        const newProgress: Omit<IProgresso, 'id'> = {
+        const newProgress: IProgresso = {
           ID_Usuario: activeUserId,
           ID_Aula: aulaId,
-          DataConclusao: formattedDate,
+          DataConclusao: new Date().toISOString(),
           Status: 'Concluído'
         };
         const created = await progressoService.criar(newProgress);
@@ -203,8 +207,8 @@ export const AulasPages = () => {
         // Check for 100% course completion
         await verificarEGerarCertificado(activeUserId, selectedCourseId, updatedProgress);
       }
-    } catch {
-      triggerAlert('danger', 'Erro ao atualizar progresso da aula.');
+    } catch (err) {
+      triggerAlert('danger', err instanceof Error ? err.message : 'Erro ao atualizar progresso da aula.');
     }
   };
 

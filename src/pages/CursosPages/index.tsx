@@ -45,7 +45,9 @@ export const CursosPages = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     carregarDados();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const carregarDados = async () => {
@@ -142,8 +144,8 @@ export const CursosPages = () => {
   const handleStartCreate = () => {
     if (editingId === 'new') return;
 
-    const defaultInstrutor = usuarios.length > 0 ? usuarios[0].ID_Usuario || '1' : '1';
-    const defaultCategoria = categorias.length > 0 ? categorias[0].ID_Categoria || 'cat1' : 'cat1';
+    const defaultInstrutor = usuarios.length > 0 ? usuarios[0].ID_Usuario || '' : '';
+    const defaultCategoria = categorias.length > 0 ? categorias[0].ID_Categoria || '' : '';
     const today = new Date();
     const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
 

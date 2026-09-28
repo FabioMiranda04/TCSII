@@ -19,7 +19,9 @@ export const CategoriasPages = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     carregarCategorias();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const carregarCategorias = async () => {
@@ -27,8 +29,8 @@ export const CategoriasPages = () => {
     try {
       const data = await service.listar();
       setCategorias(data);
-    } catch {
-      triggerAlert('danger', 'Erro ao carregar categorias.');
+    } catch (err) {
+      triggerAlert('danger', err instanceof Error ? err.message : 'Erro ao carregar categorias.');
     } finally {
       setLoading(false);
     }
@@ -104,7 +106,7 @@ export const CategoriasPages = () => {
         });
         setErrors(errMap);
       } else {
-        triggerAlert('danger', 'Erro ao salvar a categoria.');
+        triggerAlert('danger', err instanceof Error ? err.message : 'Erro ao salvar a categoria.');
       }
     }
   };
@@ -115,8 +117,8 @@ export const CategoriasPages = () => {
         await service.deletar(id);
         setCategorias(prev => prev.filter(c => c.ID_Categoria !== id));
         triggerAlert('success', 'Categoria removida com sucesso!');
-      } catch {
-        triggerAlert('danger', 'Erro ao remover categoria.');
+      } catch (err) {
+        triggerAlert('danger', err instanceof Error ? err.message : 'Erro ao remover categoria.');
       }
     }
   };

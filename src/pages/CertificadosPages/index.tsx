@@ -3,6 +3,7 @@ import { type ICertificado } from '../../models/certificado.model';
 import { type ICurso } from '../../models/curso.model';
 import { type IUsuario } from '../../models/usuario.model';
 import { CertificadoService } from '../../services/certificado.service';
+import { ApiService } from '../../services/api.service';
 import { CursoService } from '../../services/curso.service';
 import { UsuariosService } from '../../services/usuario.service';
 
@@ -19,7 +20,30 @@ export const CertificadosPages = () => {
   // Simulated Logged-In User
   const [activeUserId, setActiveUserId] = useState<string>('1');
 
+  // Verificação pública de certificado
+  const [codigoBusca, setCodigoBusca] = useState('');
+  const [verificando, setVerificando] = useState(false);
+  const [resultadoVerificacao, setResultadoVerificacao] = useState<
+    { ok: true; cert: ICertificado } | { ok: false; msg: string } | null
+  >(null);
+
+  const verificarCodigo = async (codigo: string) => {
+    if (!codigo.trim()) return;
+    setCodigoBusca(codigo);
+    setVerificando(true);
+    setResultadoVerificacao(null);
+    try {
+      const cert = await service.verificar(codigo);
+      setResultadoVerificacao({ ok: true, cert });
+    } catch (e) {
+      setResultadoVerificacao({ ok: false, msg: e instanceof Error ? e.message : 'Certificado não encontrado.' });
+    } finally {
+      setVerificando(false);
+    }
+  };
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     carregarDados();
   }, []);
 
@@ -34,8 +58,8 @@ export const CertificadosPages = () => {
       setCertificados(certsData);
       setCursos(cursosData);
       setUsuarios(usersData);
-    } catch {
-      console.error("Erro ao carregar certificados.");
+    } catch (e) {
+      console.error('Erro ao carregar certificados.', e);
     } finally {
       setLoading(false);
     }
@@ -77,6 +101,38 @@ export const CertificadosPages = () => {
         </div>
       </div>
 
+      <div className="card border-0 shadow-sm rounded-4 mb-4">
+        <div className="card-body p-3">
+          <form
+            className="d-flex flex-column flex-md-row gap-2 align-items-md-center"
+            onSubmit={(e) => { e.preventDefault(); verificarCodigo(codigoBusca); }}
+          >
+            <label htmlFor="codigo-verificacao" className="fw-bold text-slate-800 text-nowrap mb-0">
+              <i className="bi bi-shield-check me-1"></i>Verificar certificado
+            </label>
+            <input
+              id="codigo-verificacao"
+              className="form-control rounded-3 font-monospace"
+              placeholder="Código de verificação"
+              value={codigoBusca}
+              onChange={(e) => setCodigoBusca(e.target.value)}
+            />
+            <button type="submit" className="btn btn-primary rounded-3" disabled={verificando || !codigoBusca.trim()}>
+              {verificando ? 'Verificando...' : 'Verificar'}
+            </button>
+          </form>
+          {resultadoVerificacao && (resultadoVerificacao.ok ? (
+            <div className="alert alert-success mt-3 mb-0 small">
+              Certificado válido — curso: <strong>{cursos.find(c => String(c.ID_Curso) === String(resultadoVerificacao.cert.ID_Curso))?.Titulo ?? `#${resultadoVerificacao.cert.ID_Curso}`}</strong>
+              {' '}| aluno: <strong>{usuarios.find(u => String(u.ID_Usuario) === String(resultadoVerificacao.cert.ID_Usuario))?.NomeCompleto ?? `#${resultadoVerificacao.cert.ID_Usuario}`}</strong>
+              {' '}| emitido em {ApiService.formatarData(resultadoVerificacao.cert.DataEmissao)}
+            </div>
+          ) : (
+            <div className="alert alert-danger mt-3 mb-0 small">Certificado inválido: {resultadoVerificacao.msg}</div>
+          ))}
+        </div>
+      </div>
+
       {loading ? (
         <div className="text-center py-5">
           <div className="spinner-border text-primary" role="status">
@@ -108,7 +164,7 @@ export const CertificadosPages = () => {
                       <h5 className="fw-bold text-slate-800 mb-2">{course ? course.Titulo : 'Curso Concluído'}</h5>
                       
                       <div className="text-muted small mb-3">
-                        <div>Emitido em: <strong>{cert.DataEmissao}</strong></div>
+                        <div>Emitido em: <strong>{ApiService.formatarData(cert.DataEmissao)}</strong></div>
                         <div>Verificação: <span className="font-monospace text-slate-700">{cert.CodigoVerificacao}</span></div>
                       </div>
                     </div>
@@ -118,7 +174,7 @@ export const CertificadosPages = () => {
                         <i className="bi bi-file-earmark-pdf-fill"></i>
                         <span>Download PDF</span>
                       </button>
-                      <button className="btn btn-outline-secondary btn-sm rounded-3">
+                      <button className="btn btn-outline-secondary btn-sm rounded-3" onClick={() => cert.CodigoVerificacao && verificarCodigo(cert.CodigoVerificacao)}>
                         Validar Código
                       </button>
                     </div>

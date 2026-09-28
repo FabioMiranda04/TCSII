@@ -1,0 +1,207 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+  ID_Usuario   Int      @id @default(autoincrement())
+  NomeCompleto String
+  Email        String   @unique
+  SenhaHash    String
+  DataCadastro DateTime @default(now())
+
+  cursosMinistrados Curso[]
+  matriculas        Matricula[]
+  progressos        ProgressoAula[]
+  avaliacoes        Avaliacao[]
+  certificados      Certificado[]
+  assinaturas       Assinatura[]
+
+  @@map("Usuarios")
+}
+
+model Categoria {
+  ID_Categoria Int     @id @default(autoincrement())
+  Nome         String  @unique
+  Descricao    String?
+
+  cursos  Curso[]
+  trilhas Trilha[]
+
+  @@map("Categorias")
+}
+
+model Curso {
+  ID_Curso       Int      @id @default(autoincrement())
+  Titulo         String
+  Descricao      String?
+  ID_Instrutor   Int
+  ID_Categoria   Int
+  Nivel          String
+  DataPublicacao DateTime @default(now())
+  TotalAulas     Int      @default(0)
+  TotalHoras     Int      @default(0)
+  Imagem         String?
+
+  instrutor    Usuario       @relation(fields: [ID_Instrutor], references: [ID_Usuario])
+  categoria    Categoria     @relation(fields: [ID_Categoria], references: [ID_Categoria])
+  modulos      Modulo[]
+  matriculas   Matricula[]
+  avaliacoes   Avaliacao[]
+  trilhas      TrilhaCurso[]
+  certificados Certificado[]
+
+  @@map("Cursos")
+}
+
+model Modulo {
+  ID_Modulo Int    @id @default(autoincrement())
+  ID_Curso  Int
+  Titulo    String
+  Ordem     Int
+
+  curso Curso  @relation(fields: [ID_Curso], references: [ID_Curso], onDelete: Cascade)
+  aulas Aula[]
+
+  @@map("Modulos")
+}
+
+model Aula {
+  ID_Aula        Int    @id @default(autoincrement())
+  ID_Modulo      Int
+  Titulo         String
+  TipoConteudo   String
+  URL_Conteudo   String
+  DuracaoMinutos Int
+  Ordem          Int
+
+  modulo     Modulo          @relation(fields: [ID_Modulo], references: [ID_Modulo], onDelete: Cascade)
+  progressos ProgressoAula[]
+
+  @@map("Aulas")
+}
+
+model Matricula {
+  ID_Matricula  Int       @id @default(autoincrement())
+  ID_Usuario    Int
+  ID_Curso      Int
+  DataMatricula DateTime  @default(now())
+  DataConclusao DateTime?
+
+  usuario Usuario @relation(fields: [ID_Usuario], references: [ID_Usuario], onDelete: Cascade)
+  curso   Curso   @relation(fields: [ID_Curso], references: [ID_Curso], onDelete: Cascade)
+
+  @@map("Matriculas")
+}
+
+model ProgressoAula {
+  ID_Usuario    Int
+  ID_Aula       Int
+  DataConclusao DateTime @default(now())
+  Status        String   @default("Concluído")
+
+  usuario Usuario @relation(fields: [ID_Usuario], references: [ID_Usuario], onDelete: Cascade)
+  aula    Aula    @relation(fields: [ID_Aula], references: [ID_Aula], onDelete: Cascade)
+
+  @@id([ID_Usuario, ID_Aula])
+  @@map("Progresso_Aulas")
+}
+
+model Avaliacao {
+  ID_Avaliacao  Int      @id @default(autoincrement())
+  ID_Usuario    Int
+  ID_Curso      Int
+  Nota          Int
+  Comentario    String?
+  DataAvaliacao DateTime @default(now())
+
+  usuario Usuario @relation(fields: [ID_Usuario], references: [ID_Usuario], onDelete: Cascade)
+  curso   Curso   @relation(fields: [ID_Curso], references: [ID_Curso], onDelete: Cascade)
+
+  @@map("Avaliacoes")
+}
+
+model Trilha {
+  ID_Trilha    Int     @id @default(autoincrement())
+  Titulo       String
+  Descricao    String?
+  ID_Categoria Int
+
+  categoria    Categoria     @relation(fields: [ID_Categoria], references: [ID_Categoria])
+  cursos       TrilhaCurso[]
+  certificados Certificado[]
+
+  @@map("Trilhas")
+}
+
+model TrilhaCurso {
+  ID_Trilha Int
+  ID_Curso  Int
+  Ordem     Int
+
+  trilha Trilha @relation(fields: [ID_Trilha], references: [ID_Trilha], onDelete: Cascade)
+  curso  Curso  @relation(fields: [ID_Curso], references: [ID_Curso], onDelete: Cascade)
+
+  @@id([ID_Trilha, ID_Curso])
+  @@map("Trilhas_Cursos")
+}
+
+model Certificado {
+  ID_Certificado    Int      @id @default(autoincrement())
+  ID_Usuario        Int
+  ID_Curso          Int
+  ID_Trilha         Int?
+  CodigoVerificacao String   @unique
+  DataEmissao       DateTime @default(now())
+
+  usuario Usuario @relation(fields: [ID_Usuario], references: [ID_Usuario], onDelete: Cascade)
+  curso   Curso   @relation(fields: [ID_Curso], references: [ID_Curso], onDelete: Cascade)
+  trilha  Trilha? @relation(fields: [ID_Trilha], references: [ID_Trilha], onDelete: SetNull)
+
+  @@map("Certificados")
+}
+
+model Plano {
+  ID_Plano     Int     @id @default(autoincrement())
+  Nome         String
+  Descricao    String?
+  Preco        Float
+  DuracaoMeses Int
+
+  assinaturas Assinatura[]
+
+  @@map("Planos")
+}
+
+model Assinatura {
+  ID_Assinatura Int      @id @default(autoincrement())
+  ID_Usuario    Int
+  ID_Plano      Int
+  DataInicio    DateTime
+  DataFim       DateTime
+
+  usuario    Usuario     @relation(fields: [ID_Usuario], references: [ID_Usuario], onDelete: Cascade)
+  plano      Plano       @relation(fields: [ID_Plano], references: [ID_Plano])
+  pagamentos Pagamento[]
+
+  @@map("Assinaturas")
+}
+
+model Pagamento {
+  ID_Pagamento         Int      @id @default(autoincrement())
+  ID_Assinatura        Int
+  ValorPago            Float
+  DataPagamento        DateTime
+  MetodoPagamento      String
+  Id_Transacao_Gateway String
+  DataFim              DateTime
+
+  assinatura Assinatura @relation(fields: [ID_Assinatura], references: [ID_Assinatura], onDelete: Cascade)
+
+  @@map("Pagamentos")
+}

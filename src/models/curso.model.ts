@@ -23,5 +23,5 @@ export const cursoSchema = z.object({
   DataPublicacao: z.string().min(8, 'A data de publicação deve ser informada'),
   TotalAulas: z.preprocess((val) => Number(val), z.number().int().nonnegative('Total de aulas deve ser 0 ou mais')),
   TotalHoras: z.preprocess((val) => Number(val), z.number().int().nonnegative('Total de horas deve ser 0 ou mais')),
-  Imagem: z.string().url('A URL da imagem deve ser válida')
+  Imagem: z.string().url('A URL da imagem deve ser válida').or(z.literal(''))
 });
